@@ -1,0 +1,43 @@
+---
+description: Core guidelines for working with the Stunt Double MCP server
+alwaysApply: true
+---
+
+stuntdouble-basics:
+
+- Stunt Double runs AI actors (user personas) that drive real browsers through products and return evidence. Auth is OAuth 2.1 with PKCE; no API keys.
+- Start with `list_workspaces`, then `list_projects`; always pass a workspace. Anything with a reachable URL can be tested (production, staging, previews, published prototypes).
+- `search` finds anything in a workspace by name or content (use `types` and `project_id` to narrow). Search before you create, and prefer it over listing and filtering. It only returns workspaces you belong to.
+
+Actors:
+- Name like "FirstName - Role", give a description and system prompt, and cover varied segments (new, power, enterprise, accessibility, mobile). `add_actor_knowledge` is for what one actor needs to remember.
+- Conversations are read-only over MCP (`list_conversations`, `get_conversation`). To probe actors for research or design review, run an interview.
+
+Workflows and checklists:
+- Workflows validate multi-step journeys; checklists are point-in-time quality checks. Runs are async: poll `get_workflow_run` or `get_checklist_run`.
+- `create_workflow` (trigger_type "schedule" or "webhook"), then `add_workflow_step` once per step in run order; a workflow with no steps does nothing. Steps run along their connections: check `execution_order` and `unreachable_step_ids` from `get_workflow` before activating.
+- Schedules need a timezone: pass `{ cron, timezone }` in `trigger_config` using the timezone from `get_me`, or the run lands at that hour in UTC.
+
+Feedback:
+- Lifecycle: new, reviewed, resolved (or dismissed for false positives). Cross-reference with actors and workflows for patterns and coverage gaps.
+
+Interviews:
+- Build the guide (`add_interview_section`, `add_interview_item` with `question` or `task`) before `launch_interview`. Add participants with `add_interview_participant` (`actor_id`, or `persona_spec` with `name`, `bio`, `traits`).
+- Launch is async; follow with `get_interview` and `get_interview_participant`, read `get_interview_report`, and use `regenerate_interview_report` after transcripts change.
+
+Guidelines (workspace standards):
+- A guideline is a standing rule (design system, tone of voice, brand, accessibility, compliance and so on) owned by the workspace and attached to projects. Enabled rules are rendered into every checklist run, design review, interview and triage for the project, so read `list_project_guidelines` first and assert the rules rather than restating them.
+- Check `list_workspace_guidelines`, then write once with `add_project_guideline` (library plus this project) or `add_workspace_guideline` (library only), and reuse elsewhere with `set_project_guideline`. `update_workspace_guideline` with `apply_to_design_reviews` also covers Slack and Linear reviews, which have no project.
+- To enforce a standard: codify it as a guideline, assert it with checklist checks a user could verify on the rendered page, then re-run via `create_workflow` on a schedule or deploy and design events.
+
+Stunt Double Index (how AI agents experience websites):
+- For agent readiness or AI visibility questions use `get_index_report` (a `domain`, or a `project_id`), `list_index_sessions` to explain a score, and `search_index_domains` to compare. Index data is public.
+- For a site the Index does not track yet, `request_index_score` adds it with a first score (light probes; `include_agent_sessions` for live sessions). It never rescores a tracked site.
+- `request_index_rerun` spends about 24 agent sessions, is owner-only and allowed once every 10 minutes: use it after shipping changes, not to refresh a current report.
+
+Scope:
+- `get_workspace` `settings` (public sharing, widget, workers, network policy) are admin ceilings a project cannot override.
+- Projects are archived, never deleted; archived projects and their contents read as missing.
+- `list_project_mcp_servers` shows which MCP servers a project's runs can reach.
+
+Prompts: the server ships recipes, usually surfaced as slash commands: `validate_design`, `verify_change`, `run_user_research`, `triage_feedback`, `setup_guardrails`, `check_brand`, `check_design_system`, `check_compliance`, `check_continuity`, `stuntdouble_guide`.

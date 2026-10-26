@@ -1,0 +1,12 @@
+---
+description: Checklist for validating UX changes with Stunt Double before shipping
+alwaysApply: false
+globs:
+  - "**/*"
+---
+
+review-checklist:
+
+- Before merging a UX change, run the relevant checklists against staging, confirm existing workflows still pass, and check `list_feedback` for regressions in the area.
+- New journeys need a workflow or checklist items, and a persona covering the target user type (`create_actor` if none).
+- After merging, re-run affected workflows on the deployed environment, mark addressed feedback "resolved", and compare `recent_runs` from `get_workflow`.
